@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>苯駢芘毒油事件 PBIL 探討與曼陀羅九宮格思考</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDkU_OBiUC0dgu4Mti-K-tuPMo2AMS8sg0",
+          authDomain: "pbil-thinking.firebaseapp.com",
+          projectId: "pbil-thinking",
+          storageBucket: "pbil-thinking.firebasestorage.app",
+          messagingSenderId: "431787773695",
+          appId: "1:431787773695:web:c8c6b0761dd1a62618c6ca",
+          measurementId: "G-798NMNFTZQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let unsubscribe = null;
+
+        function getGroupId() {
+            return document.getElementById("group-select").value || "group-1";
+        }
+
+        window.saveDataToCloud = async function() {
+            const group = getGroupId();
+            const data = gatherData();
+            try {
+                await setDoc(doc(db, "mandala_benzopyrene", group), data);
+                showToast(`[${group}] 雲端儲存成功！`);
+            } catch (e) {
+                console.error("儲存失敗: ", e);
+                alert("儲存失敗，請檢查網路連線。");
+            }
+        };
+
+        window.listenToCloud = function() {
+            if (unsubscribe) unsubscribe();
+            const group = getGroupId();
+            
+            unsubscribe = onSnapshot(doc(db, "mandala_benzopyrene", group), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    for (let i = 0; i < 9; i++) {
+                        const el = document.getElementById(`grid-${i}`);
+                        if (el && data[`grid-${i}`] !== undefined) {
+                            el.value = data[`grid-${i}`];
+                        }
+                    }
+                    const summaryEl = document.getElementById("summary-box");
+                    if (summaryEl && data.summary !== undefined) {
+                        summaryEl.value = data.summary;
+                    }
+                } else {
+                    for (let i = 0; i < 9; i++) {
+                        if (i === 4) continue;
+                        const el = document.getElementById(`grid-${i}`);
+                        if (el) el.value = "";
+                    }
+                    document.getElementById("summary-box").value = "";
+                }
+            });
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            toast.innerText = msg;
+            toast.className = "fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 z-50";
+            setTimeout(() => { 
+                toast.className = "fixed bottom-5 right-5 bg-emerald-600 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50"; 
+            }, 2000);
+        }
+
+        window.onload = () => {
+            window.listenToCloud();
+            document.getElementById("group-select").addEventListener("change", window.listenToCloud);
+        };
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen p-4 md:p-6">
+    <div id="toast" class="opacity-0"></div>
+    <div class="max-w-6xl mx-auto">
+        <!-- 標題與控制器區塊 -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-flask-vial text-indigo-600"></i> 苯駢芘毒油事件 PBIL 曼陀羅思考
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">即時同步雲端資料庫（支援組別切換與跨載具多端儲存）</p>
+                <div class="mt-2">
+                    <a href="https://www.fda.gov.tw/TC/site.aspx?sid=13702" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 transition">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> 參考資料：衛生福利部食品藥物管理署 (FDA) 專區
+                    </a>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                    <label for="group-select" class="text-xs font-bold text-slate-600 pl-2">組別：</label>
+                    <select id="group-select" class="bg-white border border-slate-300 rounded-lg px-3 py-1 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="group-1">第一組</option>
+                        <option value="group-2">第二組</option>
+                        <option value="group-3">第三組</option>
+                        <option value="group-4">第四組</option>
+                        <option value="group-5">第五組</option>
+                        <option value="group-6">第六組</option>
+                    </select>
+                </div>
+
+                <button onclick="saveCurrentData()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 儲存至雲端
+                </button>
+                <button onclick="copyText()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i> 複製文字
+                </button>
+                <button onclick="exportTextFile()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-arrow-down"></i> 匯出文字
+                </button>
+            </div>
+        </header>
+
+        <!-- 3x3 曼陀羅九宮格 (帶引導提示文字) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- 0: 面向一 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向一：食品安全監測與檢驗</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>檢驗技術是否有局限？如何提高常態抽驗頻率與苯駢芘指標檢驗量能？
+                </p>
+                <textarea id="grid-0" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 1: 面向二 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向二：政府法規與罰則機制</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>對於違法黑心油廠商，目前的食安法裁罰力道是否足夠？如何健全源頭追蹤制度？
+                </p>
+                <textarea id="grid-1" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 2: 面向三 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向三：廠商責任與誠信經營</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>油脂加工業者（如焙炒、精煉）應具備何種品管與自主檢驗責任？如何落實企業倫理？
+                </p>
+                <textarea id="grid-2" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 3: 面向四 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向四：學校團膳與午餐把關</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>學校營養午餐該如何預防採購到問題食用油？廠商需提供何種認證證明？
+                </p>
+                <textarea id="grid-3" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 4: 核心主題 -->
+            <div class="bg-amber-50 p-4 rounded-2xl shadow-inner border border-amber-300 flex flex-col">
+                <span class="text-xs font-bold text-amber-800 mb-1">★ 核心主題</span>
+                <p class="text-xs text-amber-800 font-medium mb-2">
+                    🎯 整合 8 大面向，深入解構苯駢芘毒油事件，尋求全方位食安防禦機制。
+                </p>
+                <textarea id="grid-4" class="w-full h-28 p-2 border border-amber-300 bg-white rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold text-amber-900" readonly>苯駢芘毒油事件與全方位應對策略</textarea>
+            </div>
+            <!-- 5: 面向五 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向五：家庭採購與飲食選擇</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>民眾購買食用油時應注意哪些標示與認證？日常烹調如何避免油脂過熱產生苯駢芘？
+                </p>
+                <textarea id="grid-5" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 6: 面向六 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向六：消費者權益與通報機制</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>當誤食問題油品時，消費者如何集體求償？如何建立便利的食安疑慮檢舉與通報管道？
+                </p>
+                <textarea id="grid-6" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 7: 面向七 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向七：媒體傳播與風險溝通</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>事件爆發時，政府與媒體如何進行正確實證衛教，避免民眾恐慌或接收錯誤資訊？
+                </p>
+                <textarea id="grid-7" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+            <!-- 8: 面向八 -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col">
+                <span class="text-xs font-bold text-indigo-600 mb-1">面向八：環境永續與廢油回收</span>
+                <p class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg mb-2 border border-amber-100">
+                    💡 <strong>思考提示：</strong>高溫劣化的廢棄食用油該如何回收流向控管，避免不法業者二次回收重製？
+                </p>
+                <textarea id="grid-8" class="w-full h-28 p-2 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請輸入討論與對策..."></textarea>
+            </div>
+        </div>
+
+        <!-- 全景對策統整 -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-bullseye text-indigo-600"></i> 全景對策統整與行動方案
+            </h2>
+            <p class="text-xs text-slate-500 mb-3">綜合上述 8 個面向，提出具體可行的跨領域解決方案與建議行動步驟：</p>
+            <textarea id="summary-box" class="w-full h-36 p-3 border border-slate-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="請在此統整最終結論與跨面向行動方案..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        function gatherData() {
+            const data = {};
+            for (let i = 0; i < 9; i++) {
+                data[`grid-${i}`] = document.getElementById(`grid-${i}`).value;
+            }
+            data.summary = document.getElementById("summary-box").value;
+            return data;
+        }
+
+        function saveCurrentData() {
+            window.saveDataToCloud();
+        }
+
+        function copyText() {
+            const group = document.getElementById("group-select").value;
+            const data = gatherData();
+            let text = `【苯駢芘毒油事件 PBIL 曼陀羅思考紀錄 - ${group}】\n`;
+            text += `參考資料：https://www.fda.gov.tw/TC/site.aspx?sid=13702\n\n`;
+            for (let i = 0; i < 9; i++) {
+                text += `格子 ${i+1}: ${data[`grid-${i}`]}\n`;
+            }
+            text += `\n【全景對策統整】\n${data.summary}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                alert("已成功複製全部文字到剪貼簿！");
+            });
+        }
+
+        function exportTextFile() {
+            const group = document.getElementById("group-select").value;
+            const data = gatherData();
+            let text = `【苯駢芘毒油事件 PBIL 曼陀羅思考紀錄 - ${group}】\n`;
+            text += `參考資料：https://www.fda.gov.tw/TC/site.aspx?sid=13702\n\n`;
+            for (let i = 0; i < 9; i++) {
+                text += `格子 ${i+1}: ${data[`grid-${i}`]}\n`;
+            }
+            text += `\n【全景對策統整】\n${data.summary}`;
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `PBIL_Benzopyrene_Report_${group}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
